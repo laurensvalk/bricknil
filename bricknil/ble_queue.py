@@ -168,11 +168,11 @@ class BLEventQ(Process):
                     devices = await self.ble.out_queue.get() # Wait for discovered devices
                     await self.ble.out_queue.task_done()
                     # Filter out no-matching uuid
-                    devices = [d for d in devices if str(uart_uuid) in d.uuids]
+                    devices = [d for d in devices if str(uart_uuid) in d.metadata['uuids']]
                     # NOw, extract the manufacturer_id
                     for device in devices:
-                        assert len(device.manufacturer_data) == 1
-                        data = next(iter(device.manufacturer_data.values())) # Get the one and only key
+                        assert len(device.metadata['manufacturer_data']) == 1
+                        data = next(iter(device.metadata['manufacturer_data'].values())) # Get the one and only key
                         device.manufacturer_id = data[1]
                 else:
                     devices = self.ble.find_devices(service_uuids=[uart_uuid])
@@ -234,7 +234,7 @@ class BLEventQ(Process):
             device = await self.ble.out_queue.get()
             await self.ble.out_queue.task_done()
             hub.ble_id = self.device.address
-            self.message_info(f'Device advertised: {device.characteristics}')
+            self.message_info(f'Device advertised: {device.services.characteristics}')
             hub.tx = (device, hub.char_uuid)   # Need to store device because the char is not an object in Bleak, unlike Bluefruit library
             # Hack to fix device name on Windows
             if self.device.name == "Unknown" and hasattr(device._requester, 'Name'):
