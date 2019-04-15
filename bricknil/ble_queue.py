@@ -1,11 +1,11 @@
-# Copyright 2019 Virantha N. Ekanayake 
-# 
+# Copyright 2019 Virantha N. Ekanayake
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 # http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -117,9 +117,9 @@ class BLEventQ(Process):
 
     def _check_devices_for(self, devices, name, manufacturer_id, address):
         """Check if any of the devices match what we're looking for
-           
+
            First, check to make sure the manufacturer_id matches.  If the
-           manufacturer_id is not present in the BLE advertised data from the 
+           manufacturer_id is not present in the BLE advertised data from the
            device, then fall back to the name (although this is unreliable because
            the name on the device can be changed by the user through the LEGO apps).
 
@@ -173,13 +173,25 @@ class BLEventQ(Process):
                     for device in devices:
                         assert len(device.metadata['manufacturer_data']) == 1
                         data = next(iter(device.metadata['manufacturer_data'].values())) # Get the one and only key
-                        device.manufacturer_id = data[1]
+                        # for some reason, LEGO decided it was a good idea to use
+                        # two different formats for advertising data
+                        if '00001625-1212-efde-1623-785feabcd123' in device.metadata['uuids']:
+                            # bootlaoder service
+                            device.manufacturer_id = data[4]
+                        else:
+                            # normal device
+                            device.manufacturer_id = data[1]
                 else:
                     devices = self.ble.find_devices(service_uuids=[uart_uuid])
                     for device in devices:
                         self.message_info(f'advertised: {device.advertised}')
                         if len(device.advertised) > 4:
-                            device.manufacturer_id = device.advertised[4]
+                            if '00001625-1212-efde-1623-785feabcd123' == str(device.advertised[0]):
+                                # bootlaoder service
+                                device.manufacturer_id = device.advertised[7]
+                            else:
+                                # normal device
+                                device.manufacturer_id = device.advertised[4]
                         else:
                             device.manufacturer_id = None
                         # Remap device.id to device.address to be consistent with bleak
@@ -221,7 +233,7 @@ class BLEventQ(Process):
         try:
             ble_id = uuid.UUID(hub.ble_id) if hub.ble_id else None
         except ValueError:
-            # In case the user passed in a 
+            # In case the user passed in a
             self.message_info(f"ble_id {hub.ble_id} is not a parseable UUID, so assuming it's a BLE network addresss")
             ble_id = hub.ble_id
 
