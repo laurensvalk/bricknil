@@ -84,6 +84,9 @@ class BLEventQ(Process):
             await self.ble.in_queue.put(('tx', (device, char_uuid, msg, response)))
         else:
             characteristic.write_value(msg, int(not response))
+            # HACK: give time for packet to be sent
+            # really should wait for peripheral:didWriteValueForCharacteristic:error:
+            await sleep(0.001)
 
     async def get_messages(self, hub):
         """Instance a Message object to parse incoming messages and setup
@@ -111,6 +114,9 @@ class BLEventQ(Process):
         else:
             # Adafruit library does not callback with the sender, only the data
             hub.tx.start_notify(received)
+            # HACK: give time for notifications to be enabled
+            # really should wait for peripheral:didUpdateValueForCharacteristic:error: 
+            await sleep(0.25)
 
 
     def _check_devices_for(self, devices, name, manufacturer_id, address):
