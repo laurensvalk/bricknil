@@ -81,6 +81,9 @@ class Hub(Process):
 
         while not self.tx:  # Need to make sure we have a handle to the uart
             await sleep(1)
+        # Message needs to have length prepended
+        length = len(msg_bytes) + 1
+        msg_bytes = bytearray([length]+msg_bytes)
         await self.message_queue.put((msg_name, self, msg_bytes))
         if self.web_queue_out and peripheral:
             cls_name = peripheral.__class__.__name__

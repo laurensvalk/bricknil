@@ -78,12 +78,9 @@ class BLEventQ(Process):
                   a tuple (device, uuid : str)
               msg (bytearray) : Message with header
         """
-        # Message needs to have length prepended
-        length = len(msg)+1
-        values = bytearray([length]+msg)
         if USE_BLEAK:
             device, char_uuid = characteristic
-            await self.ble.in_queue.put( ('tx', (device, char_uuid, values)) )
+            await self.ble.in_queue.put(('tx', (device, char_uuid, msg)))
         else:
             characteristic.write_value(values)
 
