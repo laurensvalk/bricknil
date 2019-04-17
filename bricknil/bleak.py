@@ -71,8 +71,8 @@ class Bleak:
                 await device.connect()
                 await self.out_queue.put(device)
             elif msg == 'tx':
-                device, char_uuid, msg_bytes = val
-                await device.write_gatt_char(char_uuid, msg_bytes)
+                device, char_uuid, msg_bytes, response = val
+                await device.write_gatt_char(char_uuid, msg_bytes, response)
             elif msg == 'notify':
                 device, char_uuid, msg_handler = val
                 await device.start_notify(char_uuid, msg_handler)

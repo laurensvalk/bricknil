@@ -57,11 +57,10 @@ class BLEventQ(Process):
     async def run(self):
         try:
             while True:
-                msg = await self.q.get()
-                msg_type, hub, msg_val = msg
+                msg_type, hub, msg_val, response = await self.q.get()
                 await self.q.task_done()
                 self.message_debug(f'Got msg: {msg_type} = {msg_val}')
-                await self.send_message(hub.tx, msg_val)
+                await self.send_message(hub.tx, msg_val, response)
         except CancelledError:
             self.message(f'Terminating and disconnecxting')
             if USE_BLEAK:
@@ -69,7 +68,7 @@ class BLEventQ(Process):
             else:
                 self.device.disconnect()
 
-    async def send_message(self, characteristic, msg):
+    async def send_message(self, characteristic, msg, response):
         """Prepends a byte with the length of the msg and writes it to
            the characteristic
 
@@ -77,12 +76,14 @@ class BLEventQ(Process):
               characteristic : An object from bluefruit, or if using Bleak,
                   a tuple (device, uuid : str)
               msg (bytearray) : Message with header
+              response (bool) : When ``True``, request a response to the BLE
+                  write command
         """
         if USE_BLEAK:
             device, char_uuid = characteristic
-            await self.ble.in_queue.put(('tx', (device, char_uuid, msg)))
+            await self.ble.in_queue.put(('tx', (device, char_uuid, msg, response)))
         else:
-            characteristic.write_value(values)
+            characteristic.write_value(msg, int(not response))
 
     async def get_messages(self, hub):
         """Instance a Message object to parse incoming messages and setup

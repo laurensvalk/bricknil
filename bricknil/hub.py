@@ -84,7 +84,7 @@ class Hub(Process):
         # Message needs to have length prepended
         length = len(msg_bytes) + 1
         msg_bytes = bytearray([length]+msg_bytes)
-        await self.message_queue.put((msg_name, self, msg_bytes))
+        await self.message_queue.put((msg_name, self, msg_bytes, False))
         if self.web_queue_out and peripheral:
             cls_name = peripheral.__class__.__name__
             await self.web_queue_out.put( f'{self.name}|{cls_name}|{peripheral.name}|{peripheral.port}|{msg_name}\r\n'.encode('utf-8') )
